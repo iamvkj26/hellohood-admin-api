@@ -1,5 +1,5 @@
-require("dotenv").config();
 const crypto = require("crypto");
+require("dotenv").config();
 
 const encodeId = (id) => {
     const secretId = process.env.ID_HASH_SECRET;
