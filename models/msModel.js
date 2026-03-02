@@ -58,19 +58,10 @@ const movieSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    msUploadedBy: {
-        type: String,
-        required: true,
-        trim: true
-    },
     msWatched: {
         type: Boolean,
         default: false,
         index: true
-    },
-    msWatchedAt: {
-        type: Date,
-        default: null
     },
     msCollection: {
         type: {

@@ -9,7 +9,7 @@ const escapeRegex = str => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 router.post("/post", authenticate, authorize("dev", "admin"), async (req, res) => {
     try {
-        const { msName, msAbout, msPoster, msLink, msSeason, msFormat, msIndustry, msReleaseDate, msGenre, msRating, msUploadedBy, msCollection } = req.body;
+        const { msName, msAbout, msPoster, msLink, msSeason, msFormat, msIndustry, msReleaseDate, msGenre, msRating, msCollection } = req.body;
 
         if (msName && msReleaseDate) {
             const existing = await MovieSeries.findOne({
@@ -30,7 +30,7 @@ router.post("/post", authenticate, authorize("dev", "admin"), async (req, res) =
         };
 
         const newMovieSeries = new MovieSeries({
-            msName, msAbout, msPoster: poster, msLink, msSeason, msFormat, msIndustry, msReleaseDate, msGenre, msRating, msUploadedBy, msCollection: msCollection || null
+            msName, msAbout, msPoster: poster, msLink, msSeason, msFormat, msIndustry, msReleaseDate, msGenre, msRating, msCollection: msCollection || null
         });
         const add = await newMovieSeries.save();
         res.status(200).json({ data: add, message: `The '${msName}' added successfully.` });
@@ -110,7 +110,6 @@ router.patch("/watched/:id", authenticate, authorize("dev", "admin"), async (req
 
         const wasWatched = item.msWatched;
         item.msWatched = !wasWatched;
-        item.msWatchedAt = !wasWatched ? new Date() : null;
 
         const watched = await item.save();
 
