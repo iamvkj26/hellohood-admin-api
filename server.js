@@ -18,7 +18,8 @@ mongoose.connect(mongoString).then(() =>
     console.error("MongoDB connection error:", err)
 );
 
-app.use("/admin", require("./routes/adminRoutes"));
 app.use("/auth", require("./routes/authRoutes"));
+app.use("/admin", require("./routes/msRoutes"));
+app.use("/query", require("./routes/queryRoutes"));
 
 app.listen(port, () => console.log(`Server is running on http://localhost:${port}`));

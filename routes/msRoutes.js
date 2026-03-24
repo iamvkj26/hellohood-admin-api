@@ -46,7 +46,7 @@ router.get("/get", authenticate, authorize("dev", "admin"), async (req, res) => 
 
         if (search) filter.msName = { $regex: new RegExp(escapeRegex(search), "i") };
 
-        const data = await MovieSeries.find(filter).sort({ msReleaseDate: -1 }).select("-__v -hashedId");
+        const data = await MovieSeries.find(filter).sort({ msReleaseDate: -1 }).select("-msCollection -__v -hashedId");
 
         res.status(200).json({ data: data, totalData: data.length, message: `The MovieSeries fetched${search ? ` matching '${search}'` : ""}, sorted by latest release date.` });
     } catch (error) {
