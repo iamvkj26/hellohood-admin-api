@@ -33,9 +33,9 @@ router.post("/post", authenticate, authorize("dev", "admin"), async (req, res) =
             msName, msAbout, msPoster: poster, msLink, msSeason, msFormat, msIndustry, msReleaseDate, msGenre, msRating, msCollection: msCollection || null
         });
         const add = await newMovieSeries.save();
-        res.status(200).json({ data: add, message: `The '${msName}' added successfully.` });
+        res.status(201).json({ data: add, message: `The '${msName}' added successfully.` });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(400).json({ message: error.message });
     };
 });
 
@@ -50,7 +50,7 @@ router.get("/get", authenticate, authorize("dev", "admin"), async (req, res) => 
 
         res.status(200).json({ data: data, totalData: data.length, message: `The MovieSeries fetched${search ? ` matching '${search}'` : ""}, sorted by latest release date.` });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: error.message });
     };
 });
 
@@ -79,8 +79,8 @@ router.patch("/update/:id", authenticate, authorize("dev"), async (req, res) => 
                     resource_type: "image"
                 });
                 body.msPoster = uploadResult.secure_url;
-            } catch (err) {
-                return res.status(400).json({ message: "Image upload failed", error: err.message });
+            } catch (error) {
+                return res.status(400).json({ message: "Image upload failed", error: error.message });
             };
         };
 
@@ -95,13 +95,14 @@ router.delete("/delete/:id", authenticate, authorize("dev"), async (req, res) =>
     try {
         const id = req.params.id;
         const deleteD = await MovieSeries.findByIdAndDelete(id);
+        if (!deleteD) return res.status(404).json({ message: "Not found" });
         res.status(200).json({ message: `The '${deleteD.msName}' deleted successfully.` });
     } catch (error) {
         res.status(400).json({ message: error.message });
     };
 });
 
-router.patch("/watched/:id", authenticate, authorize("dev", "admin"), async (req, res) => {
+router.patch("/watched/:id", authenticate, authorize("dev"), async (req, res) => {
     try {
         const id = req.params.id;
         const item = await MovieSeries.findById(id);

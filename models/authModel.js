@@ -24,8 +24,12 @@ const authSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ["dev", "user"],
+        enum: ["dev", "admin", "user"],
         default: "user"
+    },
+    tokenVersion: {
+        type: Number,
+        default: 0
     }
 }, { timestamps: true });
 

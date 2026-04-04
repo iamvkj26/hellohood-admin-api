@@ -66,28 +66,21 @@ const movieSchema = new mongoose.Schema({
     },
     msCollection: {
         type: {
-            name: {
-                type: String,
-                required: true
-            },
-            icon: {
-                type: String,
-                required: true
-            },
+            name: { type: String, required: true },
+            icon: { type: String, required: true },
         },
         trim: true,
-        index: true,
         default: null
     },
     ott: {
         type: String,
-        enum: ["netflix", "prime", "hotstar", "other"],
+        enum: ["netflix", "prime", "hotstar", "zee5", "sonyliv", "lionsgateplay", "other", "none"],
         index: true,
-        default: "other"
+        default: "none"
     }
 });
 
-movieSchema.index({ msName: 1, msReleaseDate: -1 }, { unique: true });
+movieSchema.index({ msName: 1, msReleaseDate: -1, "msCollection.name": 1 }, { unique: true });
 
 movieSchema.pre("save", function (next) {
     if (this.isNew) this.hashedId = encodeId(this._id.toString());
