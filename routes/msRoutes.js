@@ -7,9 +7,21 @@ const MovieSeries = require("../models/msModel");
 
 const escapeRegex = str => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+const getPublicIdFromUrl = (url) => {
+    try {
+        const parts = url.split("/");
+        const uploadIndex = parts.indexOf("upload");
+        const publicPath = parts.slice(uploadIndex + 2).join("/");
+        const fileName = publicPath.split(".")[0];
+        return fileName;
+    } catch (err) {
+        return null;
+    };
+};
+
 router.post("/post", authenticate, authorize("dev", "admin"), async (req, res) => {
     try {
-        const { msName, msAbout, msPoster, msLink, msSeason, msFormat, msIndustry, msReleaseDate, msGenre, msRating, msCollection } = req.body;
+        const { msName, msAbout, msPoster, msLink, msSeason, msFormat, msIndustry, msReleaseDate, msGenre, msRating, msAddedAt, msCollection } = req.body;
 
         if (msName && msReleaseDate) {
             const existing = await MovieSeries.findOne({
@@ -30,7 +42,7 @@ router.post("/post", authenticate, authorize("dev", "admin"), async (req, res) =
         };
 
         const newMovieSeries = new MovieSeries({
-            msName, msAbout, msPoster: poster, msLink, msSeason, msFormat, msIndustry, msReleaseDate, msGenre, msRating, msCollection: msCollection || null
+            msName, msAbout, msPoster: poster, msLink, msSeason, msFormat, msIndustry, msReleaseDate, msGenre, msRating, msAddedAt: new Date(), msCollection: msCollection || null
         });
         const add = await newMovieSeries.save();
         res.status(201).json({ data: add, message: `The '${msName}' added successfully.` });
@@ -59,6 +71,10 @@ router.patch("/update/:id", authenticate, authorize("dev"), async (req, res) => 
         const id = req.params.id;
         const body = req.body;
 
+        if (!Object.keys(body).length) {
+            return res.status(400).json({ message: "No data provided to update." });
+        };
+
         if (body.msName && body.msReleaseDate) {
             const existing = await MovieSeries.findOne({
                 _id: { $ne: id },
@@ -72,7 +88,7 @@ router.patch("/update/:id", authenticate, authorize("dev"), async (req, res) => 
             };
         };
 
-        if (body.msPoster) {
+        if (body.msPoster && body.msPoster.startsWith("data:")) {
             try {
                 const uploadResult = await cloudinary.uploader.upload(body.msPoster, {
                     folder: "posters",
@@ -80,11 +96,15 @@ router.patch("/update/:id", authenticate, authorize("dev"), async (req, res) => 
                 });
                 body.msPoster = uploadResult.secure_url;
             } catch (error) {
-                return res.status(400).json({ message: "Image upload failed", error: error.message });
+                return res.status(400).json({
+                    message: "Image upload failed",
+                    error: error.message
+                });
             };
         };
 
         const update = await MovieSeries.findByIdAndUpdate(id, body, { new: true });
+        if (!update) return res.status(404).json({ message: "Movie/Series not found." });
         res.status(200).json({ data: update, message: `The '${update.msName}' updated successfully.` });
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -96,7 +116,18 @@ router.delete("/delete/:id", authenticate, authorize("dev"), async (req, res) =>
         const id = req.params.id;
         const deleteD = await MovieSeries.findByIdAndDelete(id);
         if (!deleteD) return res.status(404).json({ message: "Not found" });
-        res.status(200).json({ message: `The '${deleteD.msName}' deleted successfully.` });
+        if (deleteD.msPoster) {
+            const publicId = getPublicIdFromUrl(deleteD.msPoster);
+            if (publicId) {
+                try {
+                    await cloudinary.uploader.destroy(publicId);
+                } catch (err) {
+                    console.error("Cloudinary delete failed:", err.message);
+                };
+            };
+        };
+        await MovieSeries.findByIdAndDelete(id);
+        res.status(200).json({ data: deleteD, message: `The '${deleteD.msName}' deleted successfully.` });
     } catch (error) {
         res.status(400).json({ message: error.message });
     };
@@ -112,9 +143,12 @@ router.patch("/watched/:id", authenticate, authorize("dev"), async (req, res) =>
         const wasWatched = item.msWatched;
         item.msWatched = !wasWatched;
 
+        if (item.msWatched) item.msWatchedAt = new Date();
+        else item.msWatchedAt = null;
+
         const watched = await item.save();
 
-        res.status(200).json({ message: `The '${watched.msName}' marked as ${watched.msWatched ? "Watched" : "Unwatched"}` });
+        res.status(200).json({ data: watched, message: `The '${watched.msName}' marked as ${watched.msWatched ? "Watched" : "Unwatched"}` });
     } catch (error) {
         res.status(400).json({ message: error.message });
     };

@@ -59,10 +59,18 @@ const movieSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    msAddedAt: {
+        type: Date,
+        default: null
+    },
     msWatched: {
         type: Boolean,
         default: false,
         index: true
+    },
+    msWatchedAt: {
+        type: Date,
+        default: null
     },
     msCollection: {
         type: {
@@ -80,7 +88,7 @@ const movieSchema = new mongoose.Schema({
     }
 });
 
-movieSchema.index({ msName: 1, msReleaseDate: -1, "msCollection.name": 1 }, { unique: true });
+movieSchema.index({ msName: 1, msReleaseDate: -1, "msCollection.name": 1, msAddedAt: -1 }, { unique: true });
 
 movieSchema.pre("save", function (next) {
     if (this.isNew) this.hashedId = encodeId(this._id.toString());

@@ -33,6 +33,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/auth", require("./routes/authRoutes"));
+app.use("/dashboard", require("./routes/dashboardRoutes"));
 app.use("/log", require("./routes/logRoutes"));
 app.use("/admin", require("./routes/msRoutes"));
 app.use("/query", require("./routes/queryRoutes"));
