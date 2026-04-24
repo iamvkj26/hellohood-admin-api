@@ -21,7 +21,7 @@ const getPublicIdFromUrl = (url) => {
 
 router.post("/post", authenticate, authorize("dev", "admin"), async (req, res) => {
     try {
-        const { msName, msAbout, msPoster, msLink, msSeason, msFormat, msIndustry, msReleaseDate, msGenre, msRating, msAddedAt, msCollection } = req.body;
+        const { msName, msAbout, msPoster, msLink, msFormat, msIndustry, msCast, msGenre, msSeason, msRating, msReleaseDate, msAddedAt, msCollection } = req.body;
 
         if (msName && msReleaseDate) {
             const existing = await MovieSeries.findOne({
@@ -42,7 +42,7 @@ router.post("/post", authenticate, authorize("dev", "admin"), async (req, res) =
         };
 
         const newMovieSeries = new MovieSeries({
-            msName, msAbout, msPoster: poster, msLink, msSeason, msFormat, msIndustry, msReleaseDate, msGenre, msRating, msAddedAt: new Date(), msCollection: msCollection || null
+            msName, msAbout, msPoster: poster, msLink, msFormat, msIndustry, msCast, msGenre, msSeason, msReleaseDate, msRating, msAddedAt: new Date(), msCollection: msCollection || null
         });
         const add = await newMovieSeries.save();
         res.status(201).json({ data: add, message: `The '${msName}' added successfully.` });
@@ -56,10 +56,12 @@ router.get("/get", authenticate, authorize("dev", "admin"), async (req, res) => 
         const { search } = req.query;
         const filter = {};
 
-        if (search) filter.msName = { $regex: new RegExp(escapeRegex(search), "i") };
+        if (search) {
+            const regex = new RegExp(escapeRegex(search), "i");
+            filter.$or = [{ msName: regex }, { msCast: regex }]
+        };
 
         const data = await MovieSeries.find(filter).sort({ msReleaseDate: -1 }).select("-msCollection -__v -hashedId");
-
         res.status(200).json({ data: data, totalData: data.length, message: `The MovieSeries fetched${search ? ` matching '${search}'` : ""}, sorted by latest release date.` });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -103,7 +105,7 @@ router.patch("/update/:id", authenticate, authorize("dev"), async (req, res) => 
             };
         };
 
-        const update = await MovieSeries.findByIdAndUpdate(id, body, { new: true });
+        const update = await MovieSeries.findByIdAndUpdate(id, body, { new: true, runValidators: true });
         if (!update) return res.status(404).json({ message: "Movie/Series not found." });
         res.status(200).json({ data: update, message: `The '${update.msName}' updated successfully.` });
     } catch (error) {
@@ -126,7 +128,6 @@ router.delete("/delete/:id", authenticate, authorize("dev"), async (req, res) =>
                 };
             };
         };
-        await MovieSeries.findByIdAndDelete(id);
         res.status(200).json({ data: deleteD, message: `The '${deleteD.msName}' deleted successfully.` });
     } catch (error) {
         res.status(400).json({ message: error.message });

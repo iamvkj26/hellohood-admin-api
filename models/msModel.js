@@ -2,17 +2,17 @@ const mongoose = require("mongoose");
 const { encodeId } = require("../utils/idHash");
 const getOTT = require("../utils/getOTT");
 
+const MIN_ADDED_DATE = new Date("2025-06-28T00:00:00.000Z");
+
 const movieSchema = new mongoose.Schema({
     hashedId: {
         type: String,
-        unique: true,
-        index: true
+        unique: true
     },
     msName: {
         type: String,
         required: true,
-        trim: true,
-        index: true
+        trim: true
     },
     msAbout: {
         type: String,
@@ -29,44 +29,47 @@ const movieSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-    msGenre: {
-        type: [String],
-        required: true,
-        index: true
-    },
     msFormat: {
         type: String,
         required: true,
-        trim: true,
-        index: true
+        trim: true
     },
     msIndustry: {
         type: String,
         required: true,
-        trim: true,
-        index: true
+        trim: true
+    },
+    msCast: {
+        type: [String],
+        required: true,
+        default: []
+    },
+    msGenre: {
+        type: [String],
+        required: true
     },
     msSeason: {
         type: String,
         required: true
     },
-    msReleaseDate: {
-        type: String,
-        required: true,
-        index: true
-    },
     msRating: {
         type: Number,
         required: true
     },
+    msReleaseDate: {
+        type: String,
+        required: true
+    },
     msAddedAt: {
         type: Date,
-        default: null
+        default: Date.now,
+        validate: {
+            validator: (value) => value >= MIN_ADDED_DATE && value <= new Date(), message: "Movie/Series Added Date cannot be before 28 June 2025."
+        }
     },
     msWatched: {
         type: Boolean,
-        default: false,
-        index: true
+        default: false
     },
     msWatchedAt: {
         type: Date,
@@ -83,12 +86,13 @@ const movieSchema = new mongoose.Schema({
     ott: {
         type: String,
         enum: ["netflix", "prime", "hotstar", "zee5", "sonyliv", "lionsgateplay", "other", "none"],
-        index: true,
         default: "none"
     }
 });
 
-movieSchema.index({ msName: 1, msReleaseDate: -1, "msCollection.name": 1, msAddedAt: -1 }, { unique: true });
+movieSchema.index({ msName: 1, msReleaseDate: 1 }, { unique: true });
+
+[{ msReleaseDate: -1 }, { msReleaseDate: 1 }, { msAddedAt: -1 }, { msWatchedAt: -1 }, { msAddedAt: -1, msWatchedAt: -1 }, { msName: 1 }, { msCast: 1 }].forEach(index => movieSchema.index(index));
 
 movieSchema.pre("save", function (next) {
     if (this.isNew) this.hashedId = encodeId(this._id.toString());

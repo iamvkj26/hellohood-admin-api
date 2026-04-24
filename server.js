@@ -37,6 +37,7 @@ app.use("/dashboard", require("./routes/dashboardRoutes"));
 app.use("/log", require("./routes/logRoutes"));
 app.use("/admin", require("./routes/msRoutes"));
 app.use("/query", require("./routes/queryRoutes"));
+app.use("/tmdb", require("./routes/tmdbRoutes"));
 
 app.use((error, req, res, next) => {
     console.error(error.stack);

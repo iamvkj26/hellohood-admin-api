@@ -6,20 +6,28 @@ const MovieSeries = require("../models/msModel");
 
 router.get("/dashboard", authenticate, authorize("dev", "admin"), async (req, res) => {
     try {
-        const { range = "60d", startDate, endDate } = req.query;
+        const { range = "30d", startDate, endDate, page = 1, limit = 10 } = req.query;
+
+        const pageNumber = parseInt(page);
+        const pageSize = parseInt(limit);
+        const skip = (pageNumber - 1) * pageSize;
 
         let fromDate, toDate;
 
-        if (startDate && endDate) {
+        if (range === "all") {
+            fromDate = new Date("2025-06-28");
+            toDate = new Date();
+        } else if (startDate && endDate) {
             fromDate = new Date(startDate);
             toDate = new Date(endDate);
             toDate.setHours(23, 59, 59, 999);
         } else {
-            let days = 60;
+            let days = 30;
             if (range === "7d") days = 7;
             if (range === "15d") days = 15;
-            if (range === "30d") days = 30;
-
+            if (range === "45d") days = 45;
+            if (range === "60d") days = 60;
+            if (range === "90d") days = 90;
             fromDate = new Date();
             fromDate.setDate(fromDate.getDate() - days);
             toDate = new Date();
@@ -28,17 +36,17 @@ router.get("/dashboard", authenticate, authorize("dev", "admin"), async (req, re
 
         const addedFilter = { msAddedAt: { $gte: fromDate, $lte: toDate } };
         const watchedFilter = { msWatchedAt: { $gte: fromDate, $lte: toDate } };
-        const combinedFilter = { $or: [{ msAddedAt: { $gte: fromDate, $lte: toDate } }, { msWatchedAt: { $gte: fromDate, $lte: toDate } }] };
+        const combinedFilter = { $or: [{ msAddedAt: { $gte: fromDate, $lte: toDate } }, { msWatchedAt: { $ne: null, $gte: fromDate, $lte: toDate } }] };
 
         const [card, recentlyAddedStats, watchedStats, recentAddedAndWatched, total, industryStats, genreStats, ottStats, upcomingStats, upcomingList, upcomingTotal] = await Promise.all([
 
-            MovieSeries.aggregate([{ $group: { _id: null, movies: { $sum: { $cond: [{ $eq: ["$msFormat", "Movie"] }, 1, 0] } }, series: { $sum: { $cond: [{ $eq: ["$msFormat", "Series"] }, 1, 0] } }, bollywood: { $sum: { $cond: [{ $eq: ["$msIndustry", "Bollywood"] }, 1, 0] } }, hollywood: { $sum: { $cond: [{ $eq: ["$msIndustry", "Hollywood"] }, 1, 0] } }, others: { $sum: { $cond: [{ $eq: ["$msIndustry", "Other"] }, 1, 0] } } } }]),
+            MovieSeries.aggregate([{ $match: combinedFilter }, { $group: { _id: null, movies: { $sum: { $cond: [{ $eq: ["$msFormat", "Movie"] }, 1, 0] } }, series: { $sum: { $cond: [{ $eq: ["$msFormat", "Series"] }, 1, 0] } }, bollywood: { $sum: { $cond: [{ $eq: ["$msIndustry", "Bollywood"] }, 1, 0] } }, hollywood: { $sum: { $cond: [{ $eq: ["$msIndustry", "Hollywood"] }, 1, 0] } }, others: { $sum: { $cond: [{ $eq: ["$msIndustry", "Other"] }, 1, 0] } } } }]),
 
-            MovieSeries.aggregate([{ $match: addedFilter }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$msAddedAt" } }, count: { $sum: 1 } } }, { $sort: { _id: 1 } }]),
+            MovieSeries.aggregate([{ $match: addedFilter }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$msAddedAt", timezone: "Asia/Kolkata" } }, count: { $sum: 1 } } }, { $sort: { _id: 1 } }]),
 
-            MovieSeries.aggregate([{ $match: watchedFilter }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$msWatchedAt" } }, count: { $sum: 1 } } }, { $sort: { _id: 1 } }]),
+            MovieSeries.aggregate([{ $match: watchedFilter }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$msWatchedAt", timezone: "Asia/Kolkata" } }, count: { $sum: 1 } } }, { $sort: { _id: 1 } }]),
 
-            MovieSeries.aggregate([{ $match: combinedFilter }, { $addFields: { activityDate: { $cond: [{ $gt: ["$msWatchedAt", "$msAddedAt"] }, "$msWatchedAt", "$msAddedAt"] }, activityType: { $cond: [{ $gt: ["$msWatchedAt", "$msAddedAt"] }, "watched", "added"] } } }, { $sort: { activityDate: -1 } }, { $project: { msName: 1, msPoster: 1, msLink: 1, msFormat: 1, msIndustry: 1, msSeason: 1, msReleaseDate: 1, msRating: 1, msAddedAt: 1, msWatchedAt: 1, ott: 1, activityDate: 1, activityType: 1 } }]), MovieSeries.countDocuments(combinedFilter),
+            MovieSeries.aggregate([{ $match: combinedFilter }, { $addFields: { activityDate: { $cond: [{ $gt: ["$msWatchedAt", "$msAddedAt"] }, "$msWatchedAt", "$msAddedAt"] }, activityType: { $cond: [{ $gt: ["$msWatchedAt", "$msAddedAt"] }, "watched", "added"] } } }, { $sort: { activityDate: -1 } }, { $skip: skip }, { $limit: pageSize }, { $project: { msName: 1, msPoster: 1, msLink: 1, msFormat: 1, msIndustry: 1, msSeason: 1, msReleaseDate: 1, msRating: 1, msAddedAt: 1, msWatchedAt: 1, ott: 1, activityDate: 1, activityType: 1 } }]), MovieSeries.countDocuments(combinedFilter),
 
             MovieSeries.aggregate([{ $match: combinedFilter }, { $group: { _id: "$msIndustry", count: { $sum: 1 } } }]),
 
@@ -62,7 +70,7 @@ router.get("/dashboard", authenticate, authorize("dev", "admin"), async (req, re
             card: card[0] || {},
             recentlyAddedStats: { data: recentlyAddedStats },
             watchedStats: { data: watchedStats },
-            recentAddedAndWatched: { data: recentAddedAndWatched, total },
+            recentAddedAndWatched: { data: recentAddedAndWatched, total, page: pageNumber, limit: pageSize, totalPages: Math.ceil(total / pageSize) },
             industryStats: { data: industryStats },
             genreStats: { data: genreStats },
             ottStats: { data: ottStats },

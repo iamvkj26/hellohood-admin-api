@@ -3,16 +3,19 @@ const mongoose = require("mongoose");
 const authSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        trim: true,
     },
     email: {
         type: String,
         required: true,
-        unique: true
+        lowercase: true,
+        trim: true
     },
     mobile: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     password: {
         type: String,
@@ -20,7 +23,7 @@ const authSchema = new mongoose.Schema({
     },
     isApproved: {
         type: Boolean,
-        default: false
+        default: false,
     },
     role: {
         type: String,
@@ -32,5 +35,7 @@ const authSchema = new mongoose.Schema({
         default: 0
     }
 }, { timestamps: true });
+
+authSchema.index({ email: 1 }, { unique: true });
 
 module.exports = mongoose.model("Auth", authSchema);
