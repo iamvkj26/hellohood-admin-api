@@ -21,7 +21,7 @@ const getPublicIdFromUrl = (url) => {
 
 router.post("/post", authenticate, authorize("dev", "admin"), async (req, res) => {
     try {
-        const { msName, msAbout, msPoster, msLink, msFormat, msIndustry, msCast, msGenre, msSeason, msRating, msReleaseDate, msAddedAt, msCollection } = req.body;
+        const { msName, msAbout, msPoster, msLink, msFormat, msIndustry, msCast, msGenre, msRating, msReleaseDate, msAddedAt, msCollection, sStatus, sSeasons } = req.body;
 
         if (msName && msReleaseDate) {
             const existing = await MovieSeries.findOne({
@@ -42,7 +42,7 @@ router.post("/post", authenticate, authorize("dev", "admin"), async (req, res) =
         };
 
         const newMovieSeries = new MovieSeries({
-            msName, msAbout, msPoster: poster, msLink, msFormat, msIndustry, msCast, msGenre, msSeason, msReleaseDate, msRating, msAddedAt: new Date(), msCollection: msCollection || null
+            msName, msAbout, msPoster: poster, msLink, msFormat, msIndustry, msCast, msGenre, msReleaseDate, msRating, msAddedAt: new Date(), msCollection: msCollection || null, sStatus, sSeasons
         });
         const add = await newMovieSeries.save();
         res.status(201).json({ data: add, message: `The '${msName}' added successfully.` });
@@ -68,7 +68,7 @@ router.get("/get", authenticate, authorize("dev", "admin"), async (req, res) => 
     };
 });
 
-router.patch("/update/:id", authenticate, authorize("dev"), async (req, res) => {
+router.patch("/update/:id", authenticate, authorize("dev", "admin"), async (req, res) => {
     try {
         const id = req.params.id;
         const body = req.body;
@@ -90,7 +90,7 @@ router.patch("/update/:id", authenticate, authorize("dev"), async (req, res) => 
             };
         };
 
-        if (body.msPoster && body.msPoster.startsWith("data:")) {
+        if (body.msPoster) {
             try {
                 const uploadResult = await cloudinary.uploader.upload(body.msPoster, {
                     folder: "posters",

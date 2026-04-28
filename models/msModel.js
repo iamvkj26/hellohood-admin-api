@@ -32,11 +32,13 @@ const movieSchema = new mongoose.Schema({
     msFormat: {
         type: String,
         required: true,
+        lowercase: true,
         trim: true
     },
     msIndustry: {
         type: String,
         required: true,
+        lowercase: true,
         trim: true
     },
     msCast: {
@@ -46,10 +48,6 @@ const movieSchema = new mongoose.Schema({
     },
     msGenre: {
         type: [String],
-        required: true
-    },
-    msSeason: {
-        type: String,
         required: true
     },
     msRating: {
@@ -83,10 +81,25 @@ const movieSchema = new mongoose.Schema({
         trim: true,
         default: null
     },
-    ott: {
+    msOTT: {
         type: String,
         enum: ["netflix", "prime", "hotstar", "zee5", "sonyliv", "lionsgateplay", "other", "none"],
         default: "none"
+    },
+    sStatus: {
+        type: String,
+        enum: ["ongoing", "completed"],
+        required: function () {
+            return this.msFormat === "series";
+        },
+        default: null
+    },
+    sSeasons: {
+        type: Number,
+        required: function () {
+            return this.msFormat === "series";
+        },
+        default: null
     }
 });
 
@@ -96,7 +109,7 @@ movieSchema.index({ msName: 1, msReleaseDate: 1 }, { unique: true });
 
 movieSchema.pre("save", function (next) {
     if (this.isNew) this.hashedId = encodeId(this._id.toString());
-    if (this.msLink) this.ott = getOTT(this.msLink);
+    if (this.msLink) this.msOTT = getOTT(this.msLink);
     next();
 });
 
@@ -104,8 +117,8 @@ movieSchema.pre("findOneAndUpdate", function (next) {
     const update = this.getUpdate();
     const link = update.msLink || (update.$set && update.$set.msLink);
     if (link) {
-        if (update.$set) update.$set.ott = getOTT(link);
-        else update.ott = getOTT(link);
+        if (update.$set) update.$set.msOTT = getOTT(link);
+        else update.msOTT = getOTT(link);
     };
     next();
 });

@@ -40,30 +40,30 @@ router.get("/dashboard", authenticate, authorize("dev", "admin"), async (req, re
 
         const [card, recentlyAddedStats, watchedStats, recentAddedAndWatched, total, industryStats, genreStats, ottStats, upcomingStats, upcomingList, upcomingTotal] = await Promise.all([
 
-            MovieSeries.aggregate([{ $match: combinedFilter }, { $group: { _id: null, movies: { $sum: { $cond: [{ $eq: ["$msFormat", "Movie"] }, 1, 0] } }, series: { $sum: { $cond: [{ $eq: ["$msFormat", "Series"] }, 1, 0] } }, bollywood: { $sum: { $cond: [{ $eq: ["$msIndustry", "Bollywood"] }, 1, 0] } }, hollywood: { $sum: { $cond: [{ $eq: ["$msIndustry", "Hollywood"] }, 1, 0] } }, others: { $sum: { $cond: [{ $eq: ["$msIndustry", "Other"] }, 1, 0] } } } }]),
+            MovieSeries.aggregate([{ $match: combinedFilter }, { $group: { _id: null, movies: { $sum: { $cond: [{ $eq: ["$msFormat", "movie"] }, 1, 0] } }, series: { $sum: { $cond: [{ $eq: ["$msFormat", "series"] }, 1, 0] } }, bollywood: { $sum: { $cond: [{ $eq: ["$msIndustry", "bollywood"] }, 1, 0] } }, hollywood: { $sum: { $cond: [{ $eq: ["$msIndustry", "hollywood"] }, 1, 0] } }, others: { $sum: { $cond: [{ $eq: ["$msIndustry", "other"] }, 1, 0] } } } }]),
 
             MovieSeries.aggregate([{ $match: addedFilter }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$msAddedAt", timezone: "Asia/Kolkata" } }, count: { $sum: 1 } } }, { $sort: { _id: 1 } }]),
 
             MovieSeries.aggregate([{ $match: watchedFilter }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$msWatchedAt", timezone: "Asia/Kolkata" } }, count: { $sum: 1 } } }, { $sort: { _id: 1 } }]),
 
-            MovieSeries.aggregate([{ $match: combinedFilter }, { $addFields: { activityDate: { $cond: [{ $gt: ["$msWatchedAt", "$msAddedAt"] }, "$msWatchedAt", "$msAddedAt"] }, activityType: { $cond: [{ $gt: ["$msWatchedAt", "$msAddedAt"] }, "watched", "added"] } } }, { $sort: { activityDate: -1 } }, { $skip: skip }, { $limit: pageSize }, { $project: { msName: 1, msPoster: 1, msLink: 1, msFormat: 1, msIndustry: 1, msSeason: 1, msReleaseDate: 1, msRating: 1, msAddedAt: 1, msWatchedAt: 1, ott: 1, activityDate: 1, activityType: 1 } }]), MovieSeries.countDocuments(combinedFilter),
+            MovieSeries.aggregate([{ $match: combinedFilter }, { $addFields: { activityDate: { $cond: [{ $gt: ["$msWatchedAt", "$msAddedAt"] }, "$msWatchedAt", "$msAddedAt"] }, activityType: { $cond: [{ $gt: ["$msWatchedAt", "$msAddedAt"] }, "watched", "added"] } } }, { $sort: { activityDate: -1 } }, { $skip: skip }, { $limit: pageSize }, { $project: { msName: 1, msPoster: 1, msLink: 1, msFormat: 1, msIndustry: 1, msReleaseDate: 1, msRating: 1, msAddedAt: 1, msWatchedAt: 1, msOTT: 1, activityDate: 1, activityType: 1 } }]), MovieSeries.countDocuments(combinedFilter),
 
             MovieSeries.aggregate([{ $match: combinedFilter }, { $group: { _id: "$msIndustry", count: { $sum: 1 } } }]),
 
             MovieSeries.aggregate([{ $match: combinedFilter }, { $unwind: "$msGenre" }, { $group: { _id: "$msGenre", count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
 
-            MovieSeries.aggregate([{ $match: combinedFilter }, { $group: { _id: "$ott", count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
+            MovieSeries.aggregate([{ $match: combinedFilter }, { $group: { _id: "$msOTT", count: { $sum: 1 } } }, { $sort: { count: -1 } }]),
 
-            MovieSeries.aggregate([{ $match: { msReleaseDate: { $gt: today } } }, { $group: { _id: { $substr: ["$msReleaseDate", 0, 7] }, movies: { $sum: { $cond: [{ $eq: ["$msFormat", "Movie"] }, 1, 0] } }, series: { $sum: { $cond: [{ $eq: ["$msFormat", "Series"] }, 1, 0] } } } }, { $sort: { _id: 1 } }]),
+            MovieSeries.aggregate([{ $match: { msReleaseDate: { $gt: today } } }, { $group: { _id: { $substr: ["$msReleaseDate", 0, 7] }, movies: { $sum: { $cond: [{ $eq: ["$msFormat", "movie"] }, 1, 0] } }, series: { $sum: { $cond: [{ $eq: ["$msFormat", "series"] }, 1, 0] } } } }, { $sort: { _id: 1 } }]),
 
             MovieSeries.find({ msReleaseDate: { $gt: today } }).sort({ msReleaseDate: 1 }).limit(10).select("-msAbout -msGenre -msCollection -hashedId -__v -msAddedAt -msWatched -msWatchedAt").lean(), MovieSeries.countDocuments({ msReleaseDate: { $gt: today } }),
         ]);
 
         let industry = { bollywood: 0, hollywood: 0, other: 0 };
         industryStats.forEach(item => {
-            if (item._id === "Bollywood") industry.bollywood = item.count;
+            if (item._id === "bollywood") industry.bollywood = item.count;
             else if (item._id === "Hollywood") industry.hollywood = item.count;
-            else if (item._id === "Other") industry.other = item.count;
+            else if (item._id === "other") industry.other = item.count;
         });
 
         res.status(200).json({
