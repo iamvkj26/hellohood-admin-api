@@ -94,12 +94,61 @@ const movieSchema = new mongoose.Schema({
         },
         default: null
     },
-    sSeasons: {
+    sTSeasons: {
         type: Number,
         required: function () {
             return this.msFormat === "series";
         },
         default: null
+    },
+    sSeasons: {
+        type: [
+            {
+                sNumber: {
+                    type: Number,
+                    required: true
+                },
+                sPoster: {
+                    type: String,
+                    trim: true,
+                    default: null
+                },
+                sReleaseDate: {
+                    type: String,
+                    default: null
+                },
+                sEpisodeCount: {
+                    type: Number,
+                    default: null
+                },
+                sAbout: {
+                    type: String,
+                    trim: true,
+                    default: null
+                },
+                sAddedAt: {
+                    type: Date,
+                    default: Date.now
+                },
+                sWatched: {
+                    type: Boolean,
+                    default: false
+                },
+                sWatchedAt: {
+                    type: Date,
+                    default: null
+                },
+                sStatus: {
+                    type: String,
+                    enum: ["released", "upcoming"],
+                    default: "released"
+                }
+            }
+        ],
+        required: function () {
+            return this.msFormat === "series";
+        },
+        default: []
     }
 });
 

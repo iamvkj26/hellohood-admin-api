@@ -56,7 +56,7 @@ router.get("/dashboard", authenticate, authorize("dev", "admin"), async (req, re
 
             MovieSeries.aggregate([{ $match: { msReleaseDate: { $gt: today } } }, { $group: { _id: { $substr: ["$msReleaseDate", 0, 7] }, movies: { $sum: { $cond: [{ $eq: ["$msFormat", "movie"] }, 1, 0] } }, series: { $sum: { $cond: [{ $eq: ["$msFormat", "series"] }, 1, 0] } } } }, { $sort: { _id: 1 } }]),
 
-            MovieSeries.find({ msReleaseDate: { $gt: today } }).sort({ msReleaseDate: 1 }).limit(10).select("-msAbout -msGenre -msCollection -hashedId -__v -msAddedAt -msWatched -msWatchedAt").lean(), MovieSeries.countDocuments({ msReleaseDate: { $gt: today } }),
+            MovieSeries.find({ msReleaseDate: { $gt: today } }).sort({ msReleaseDate: 1 }).limit(20).select("-msAbout -msGenre -msCollection -hashedId -__v -msAddedAt -msWatched -msWatchedAt").lean(), MovieSeries.countDocuments({ msReleaseDate: { $gt: today } }),
         ]);
 
         let industry = { bollywood: 0, hollywood: 0, other: 0 };
