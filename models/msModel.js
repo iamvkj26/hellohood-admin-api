@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const { encodeId } = require("../utils/idHash");
 const getOTT = require("../utils/getOTT");
 
-const MIN_ADDED_DATE = new Date("2025-06-28T00:00:00.000Z");
+const MIN_ADDED_DATE = new Date("2025-07-05T00:00:00.000Z");
 
 const movieSchema = new mongoose.Schema({
     hashedId: {
@@ -62,7 +62,7 @@ const movieSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
         validate: {
-            validator: (value) => value >= MIN_ADDED_DATE && value <= new Date(), message: "Movie/Series Added Date cannot be before 28 June 2025."
+            validator: (value) => value >= MIN_ADDED_DATE && value <= new Date(), message: "Movie/Series Added Date cannot be before 05 July 2025."
         }
     },
     msWatched: {
